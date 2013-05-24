@@ -1,0 +1,41 @@
+{% extends "master.html" %}
+{% block body %}
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="alert alert-error alert-block">
+      <ul>
+      {% for message in messages %}
+        <li>{{ message }}</li>
+      {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+{% endwith %}
+
+  <h3>Login</h3>
+  <form method="POST" action="/">
+    {{form.hidden_tag()}}
+    
+    <div>
+      {{ form.email.label }}
+      {{ form.email(placeholder="kajudd@gmail.com") }}
+      {% for error in form.errors.email %}
+        <span style="color: red;">[{{error}}]</span><br>
+      {% endfor %}
+    </div>
+
+    <div>
+      {{ form.password.label }}
+      {{ form.password(placeholder="Password") }}
+      {% for error in form.errors.password %}
+        <span style="color: red;">[{{error}}]</span><br>
+      {% endfor %}
+    </div>
+
+    <button class="btn btn-info" type="submit">Submit</button>  
+  </form>
+
+  <p>Not yet a member? <a class="sign-up-link btn btn-small" href="{{ url_for('sign_up') }}">Sign Up!</a></p>
+
+  {% endblock %}
