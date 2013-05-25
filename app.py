@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, session, flash
+from flask import Flask, render_template, redirect, session, flash, request
 import model
 from sqlalchemy import and_
 import forms
@@ -6,9 +6,15 @@ from flask_login import LoginManager
 from flask_login import login_user, logout_user, current_user, login_required
 import bcrypt
 from twilio.util import TwilioCapability
-
+import twilio.twiml
+import re
+import twilio_config
 
 app = Flask(__name__)
+
+caller_id = twilio_config.caller_id
+
+default_client = twilio_config.default_client
 
 #Set up config for WTForms CSRF.
 app.config.from_object('config')
@@ -68,6 +74,7 @@ def sign_up():
 
 
 @app.route("/contacts", methods=["POST", "GET"])
+@login_required
 def contacts():
 #MAKE PAGE THAT DISPLAYS ALL CONTACTS WITH BUTTONS TO CALL
     ##CONTACTS ARE ALL THE USER'S CONTACTS AND THE INFO ABOUT THEM
@@ -78,6 +85,7 @@ def contacts():
     return render_template("contacts.html", contacts=contacts)
 
 @app.route("/add_contacts", methods=["POST", "GET"])
+@login_required
 #MAKE A PAGE THAT LETS YOU ADD A NEW CONTACT, LINKED TO FROM CONTACTS
 def add_contacts():
     form = forms.ContactForm()
@@ -97,18 +105,36 @@ def add_contacts():
     else:
         return render_template("add_contacts.html", form=form)
 
+
+@app.route('/voice', methods=['GET', 'POST'])
+def voice():
+    from_number = request.values.get('PhoneNumber', None)
+ 
+    resp = twilio.twiml.Response()
+ 
+    with resp.dial(callerId=caller_id) as r: 
+        # If we have a number, and it looks like a phone number:
+        if from_number and re.search('^[\d\(\)\- \+]+$', from_number):
+            r.number(from_number)
+        else:
+            r.client(default_client)
+ 
+    return str(resp)
+
 # @app.route("/delete_contact")
 # #GIVES YOU A LIST OF CONTACTS, CLICK ON THE ONE YOU WANT TO DELETE
 @app.route('/client', methods=['GET', 'POST'])
+@login_required
 def client():
     """Respond to incoming requests."""
-    account_sid = "AC3b6c85a38bdca4daec6aab5ee95bdaea"
-    auth_token = "cb6ad97c390cc50e30ba7d41f300574a"
+    account_sid = twilio_config.account_sid
+    auth_token = twilio_config.auth_token
     # This is a special Quickstart application sid - or configure your own
     # at twilio.com/user/account/apps
-    application_sid = "AP89f94c23cb30bf448e9d118e00ce1f2c"
+    application_sid = twilio_config.application_sid
     capability = TwilioCapability(account_sid, auth_token)
     capability.allow_client_outgoing(application_sid)
+    capability.allow_client_incoming(default_client)
     token = capability.generate()
     return render_template('client.html', token=token)
 
