@@ -3,6 +3,7 @@
 
 <h2>Contacts</h2>
 
+
 <table class="table table-hover">
   <thead class="tablehead">
     <tr>
@@ -19,7 +20,8 @@
       <td>{{contact.phone_number}}</td>
       <td>{{contact.last_called}}</td>
       <td>{{contact.last_confirmation}}</td>
-      <td><a class="btn btn-small btn-info" href="{{ url_for('client') }}">Call Now!</a>
+      <td><a class="btn btn-small btn-info" href="/voice/{{contact.id}}">Call Now!</a>
+      <td><a class="btn btn-small btn-info" onclick="hangup();">Hang Up</a>
     </tr>
     {% endfor %}
   </tbody>
@@ -28,5 +30,6 @@
 <a class="add-contacts btn btn-large btn-info" href="{{ url_for('add_contacts') }}">Add Contacts</a>
 
 <p><a href="{{ url_for('logout') }}">Logout</a></p>
+
 
 {% endblock %}

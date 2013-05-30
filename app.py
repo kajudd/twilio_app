@@ -1,20 +1,23 @@
-from flask import Flask, render_template, redirect, session, flash, request
+from flask import Flask, render_template, redirect, session, flash, request, url_for, Response
 import model
 from sqlalchemy import and_
 import forms
 from flask_login import LoginManager
 from flask_login import login_user, logout_user, current_user, login_required
 import bcrypt
-from twilio.util import TwilioCapability
+from twilio.rest import TwilioRestClient
 import twilio.twiml
-import re
 import twilio_config
+import datetime
+import pytz
 
 app = Flask(__name__)
 
 caller_id = twilio_config.caller_id
 
 default_client = twilio_config.default_client
+
+utc = pytz.timezone("UTC")
 
 #Set up config for WTForms CSRF.
 app.config.from_object('config')
@@ -76,17 +79,11 @@ def sign_up():
 @app.route("/contacts", methods=["POST", "GET"])
 @login_required
 def contacts():
-#MAKE PAGE THAT DISPLAYS ALL CONTACTS WITH BUTTONS TO CALL
-    ##CONTACTS ARE ALL THE USER'S CONTACTS AND THE INFO ABOUT THEM
-    #GO THROUGH THE CONTACTS AND FOR EACH CONTACT, FILL IN THE CHARTS WITH THOSE THINGS
-
-    ##FIRST NAME, LAST NAME, PHONE NUMBER, LAST CALLED, LAST CONFIRMATION
     contacts = model.session.query(model.Contact).filter(model.Contact.user_id == current_user.id).all() 
     return render_template("contacts.html", contacts=contacts)
 
 @app.route("/add_contacts", methods=["POST", "GET"])
 @login_required
-#MAKE A PAGE THAT LETS YOU ADD A NEW CONTACT, LINKED TO FROM CONTACTS
 def add_contacts():
     form = forms.ContactForm()
     if form.validate_on_submit():
@@ -106,37 +103,58 @@ def add_contacts():
         return render_template("add_contacts.html", form=form)
 
 
-@app.route('/voice', methods=['GET', 'POST'])
-def voice():
-    from_number = request.values.get('PhoneNumber', None)
- 
-    resp = twilio.twiml.Response()
- 
-    with resp.dial(callerId=caller_id) as r: 
-        # If we have a number, and it looks like a phone number:
-        if from_number and re.search('^[\d\(\)\- \+]+$', from_number):
-            r.number(from_number)
-        else:
-            r.client(default_client)
- 
-    return str(resp)
-
 # @app.route("/delete_contact")
 # #GIVES YOU A LIST OF CONTACTS, CLICK ON THE ONE YOU WANT TO DELETE
-@app.route('/client', methods=['GET', 'POST'])
-@login_required
-def client():
-    """Respond to incoming requests."""
+
+@app.route('/voice/<int:id>', methods=['GET', 'POST'])
+def voice(id):
     account_sid = twilio_config.account_sid
     auth_token = twilio_config.auth_token
-    # This is a special Quickstart application sid - or configure your own
-    # at twilio.com/user/account/apps
     application_sid = twilio_config.application_sid
-    capability = TwilioCapability(account_sid, auth_token)
-    capability.allow_client_outgoing(application_sid)
-    capability.allow_client_incoming(default_client)
-    token = capability.generate()
-    return render_template('client.html', token=token)
+    current_contact = model.session.query(model.Contact).get(id)
+    client = TwilioRestClient(account_sid, auth_token)
+    current_contact.last_called = datetime.datetime.utcnow()
+    record = model.Record(id=None, contact_id=current_contact.id, 
+                            contacted_at=datetime.datetime.utcnow(), confirmation_at=None)
+    model.session.add(record)
+    model.session.commit()
+    call = client.calls.create(to="1" + str(current_contact.phone_number),
+                                from_="+19253801536",
+                                url='http://%s/greeting/%s' % (request.host, str(record.id)))
+
+    return redirect("/contacts")
+
+##string interpolation
+@app.route('/greeting/<int:id>', methods=['POST'])
+def greeting(id):
+    resp = twilio.twiml.Response()
+    resp.say("Hello, this is Deadman.")
+    with resp.gather(numDigits=1, action="/handle-key/%s" % (id), method="POST") as g:
+        g.say("To confirm you are alive, press 1.")
+    return Response(str(resp), mimetype='text/xml')
+
+@app.route("/handle-key/<int:id>", methods=['GET', 'POST'])
+def handle_key(id):
+    """Handle key press from a user."""
+ 
+    # Get the digit pressed by the user
+    digit_pressed = request.values.get('Digits', None)
+    if digit_pressed == "1":
+        resp = twilio.twiml.Response()
+        resp.say("You have confirmed you are alive. Goodbye.")
+        record = model.session.query(model.Record).get(id)
+        contact_id = record.contact_id
+        contact = model.session.query(model.Contact).get(contact_id)
+        contact.last_confirmation = datetime.datetime.utcnow()
+        record.confirmation_at = datetime.datetime.utcnow()
+        model.session.commit()
+        return str(resp)
+ 
+    # If the caller pressed anything but 1, redirect them to the homepage.
+    else:
+        resp = twilio.twiml.Response()
+        resp.say("You have not confirmed. Goodbye.")   
+        return str(resp)
 
 @app.route('/logout')
 def logout():
@@ -145,4 +163,4 @@ def logout():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')

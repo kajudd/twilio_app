@@ -45,8 +45,8 @@ class Contact(Base):
     first_name = Column(String(140), nullable=True)
     last_name = Column(String(140), nullable=True)
     phone_number = Column(String(140), nullable=True)
-    last_called = Column(DateTime(300), nullable=True)
-    last_confirmation = Column(DateTime(300), nullable=True)
+    last_called = Column(DateTime(timezone=False), nullable=True)
+    last_confirmation = Column(DateTime(timezone=False), nullable=True)
 
     user = relationship("User", backref=backref("users", order_by=id))
 
@@ -55,8 +55,8 @@ class Record(Base):
 
     id = Column(Integer, primary_key=True)
     contact_id = Column(Integer(1000), ForeignKey('contacts.id'))
-    contacted_at = Column(DateTime(300), nullable=True)
-    confirmation_at = Column(DateTime(300), nullable=True)
+    contacted_at = Column(DateTime(timezone=False), nullable=True)
+    confirmation_at = Column(DateTime(timezone=False), nullable=True)
     status = Column(String(140), nullable=True)
 
     contact = relationship("Contact", backref=backref("contacts", order_by=id))
