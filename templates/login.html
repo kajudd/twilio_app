@@ -14,28 +14,28 @@
 {% endwith %}
 
   <h3>Login</h3>
-  <form method="POST" action="/">
+  <form method="POST" action="/" class="form-horizontal">
     {{form.hidden_tag()}}
     
-    <div>
-      {{ form.email.label }}
-      {{ form.email(placeholder="kajudd@gmail.com") }}
-      {% for error in form.errors.email %}
-        <span style="color: red;">[{{error}}]</span><br>
-      {% endfor %}
+    <div class="control-group">
+      {{ form.email.label(class='control-label') }}
+      <div class="controls">
+        {{ form.email(placeholder="kajudd@gmail.com") }}
+      </div>
     </div>
-
-    <div>
-      {{ form.password.label }}
-      {{ form.password(placeholder="Password") }}
-      {% for error in form.errors.password %}
-        <span style="color: red;">[{{error}}]</span><br>
-      {% endfor %}
+    <div class="control-group">
+      {{ form.password.label(class='control-label') }}
+      <div class="controls">
+        {{ form.password(placeholder="password") }}
+      </div>
     </div>
-
-    <button class="btn btn-info" type="submit">Submit</button>  
+    <div class="control-group">
+      <div class="controls">
+        <button class="btn btn-info" type="submit">Submit</button> 
+        <p>Not yet a member? <a class="sign-up-link btn btn-small" href="{{ url_for('sign_up') }}">Sign Up!</a></p>
+      </div>
+    </div>
   </form>
 
-  <p>Not yet a member? <a class="sign-up-link btn btn-small" href="{{ url_for('sign_up') }}">Sign Up!</a></p>
 
   {% endblock %}
