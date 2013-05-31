@@ -75,13 +75,14 @@ def sign_up():
     else:
         return render_template("sign_up.html", form=form)
 
-
+#View that displays contacts.
 @app.route("/contacts", methods=["POST", "GET"])
 @login_required
 def contacts():
     contacts = model.session.query(model.Contact).filter(model.Contact.user_id == current_user.id).all() 
     return render_template("contacts.html", contacts=contacts)
 
+#View to add a new contact.
 @app.route("/add_contacts", methods=["POST", "GET"])
 @login_required
 def add_contacts():
@@ -103,9 +104,7 @@ def add_contacts():
         return render_template("add_contacts.html", form=form)
 
 
-# @app.route("/delete_contact")
-# #GIVES YOU A LIST OF CONTACTS, CLICK ON THE ONE YOU WANT TO DELETE
-
+#View to call contact, add new record to database, and update last called.
 @app.route('/voice/<int:id>', methods=['GET', 'POST'])
 def voice(id):
     account_sid = twilio_config.account_sid
@@ -124,7 +123,8 @@ def voice(id):
 
     return redirect("/contacts")
 
-##string interpolation
+
+#Prompts contact to confirm they are alive.
 @app.route('/greeting/<int:id>', methods=['POST'])
 def greeting(id):
     resp = twilio.twiml.Response()
@@ -133,12 +133,14 @@ def greeting(id):
         g.say("To confirm you are alive, press 1.")
     return Response(str(resp), mimetype='text/xml')
 
+
+
 @app.route("/handle-key/<int:id>", methods=['GET', 'POST'])
 def handle_key(id):
-    """Handle key press from a user."""
- 
     # Get the digit pressed by the user
     digit_pressed = request.values.get('Digits', None)
+
+    #If user confirms life, update last confirmation and current record.
     if digit_pressed == "1":
         resp = twilio.twiml.Response()
         resp.say("You have confirmed you are alive. Goodbye.")
@@ -150,12 +152,13 @@ def handle_key(id):
         model.session.commit()
         return str(resp)
  
-    # If the caller pressed anything but 1, redirect them to the homepage.
+    # If the caller pressed anything but 1, let them know they have not confirmed and hang up.
     else:
         resp = twilio.twiml.Response()
         resp.say("You have not confirmed. Goodbye.")   
         return str(resp)
 
+#View to logout.
 @app.route('/logout')
 def logout():
     logout_user()
