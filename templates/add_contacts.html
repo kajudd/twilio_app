@@ -18,7 +18,7 @@
   	{{form.hidden_tag()}}
     <div>
       {{ form.first_name.label }}
-      {{ form.first_name(placeholder="Kristen") }}
+      {{ form.first_name(placeholder="first name") }}
       {% for error in form.errors.first_name %}
         <span style="color: red;">[{{error}}]</span><br>
       {% endfor %}
@@ -26,7 +26,7 @@
       
     <div>
       {{ form.last_name.label }}
-      {{ form.last_name(placeholder="Judd") }}
+      {{ form.last_name(placeholder="last name") }}
       {% for error in form.errors.last_name %}
         <span style="color: red;">[{{error}}]</span><br>
       {% endfor %}
@@ -34,7 +34,7 @@
 
     <div>
       {{ form.phone_number.label }}
-      {{ form.phone_number(placeholder="Phone Number") }}
+      {{ form.phone_number(placeholder="phone number") }}
       {% for error in form.errors.phone_number %}
         <span style="color: red;">[{{error}}]</span><br>
       {% endfor %}

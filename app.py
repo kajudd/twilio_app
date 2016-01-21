@@ -36,7 +36,7 @@ def load_user(id):
 def login():
     form = forms.LoginForm()
     #If user is already in session, redirect to choose game.
-    if current_user is not None and current_user.is_authenticated():
+    if current_user and current_user.is_authenticated:
         return redirect("/contacts")
     #Login view to allow user to log in, compares given password to salted password.
     login_form = forms.LoginForm()
