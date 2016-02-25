@@ -117,8 +117,9 @@ def voice(id):
                             contacted_at=datetime.datetime.utcnow(), confirmation_at=None)
     model.session.add(record)
     model.session.commit()
+    #Insert the phone number of your choice as a string in "from"
     call = client.calls.create(to="1" + str(current_contact.phone_number),
-                                from_="+19253801536",
+                                from_="",
                                 url='http://%s/greeting/%s' % (request.host, str(record.id)))
 
     return redirect("/contacts")
@@ -128,7 +129,7 @@ def voice(id):
 @app.route('/greeting/<int:id>', methods=['POST'])
 def greeting(id):
     resp = twilio.twiml.Response()
-    resp.say("Hello, this is Deadman.")
+    resp.say("Hello, this is Checkup.")
     with resp.gather(numDigits=1, action="/handle-key/%s" % (id), method="POST") as g:
         g.say("To confirm you are alive, press 1.")
     return Response(str(resp), mimetype='text/xml')
